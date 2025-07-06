@@ -1,2 +1,1 @@
-# FPSveto
-Valorant/CS2 Veto HUD
+Quick and easy HUDs for Valorant and CS2 veto system
