@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valorant Veto | VCT Overlay</title>
+    <style>
+        /* --- FONT & GLOBAL STYLES --- */
+        @import url('https://fonts.googleapis.com/css2?family=Anton&family=Teko:wght@500;700&display=swap');
+
+        :root {
+            --vct-blue: #0092e1;
+            --vct-red: #ff4655;
+            --vct-gold: #ffc829;
+            --dark-bg: #101822;
+            --text-light: #ece8e1;
+            --control-panel-bg: #1a535c;
+            --border-color: rgba(255, 255, 255, 0.2);
+            --header-bg: rgba(0,0,0,0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Teko', sans-serif;
+            background-color: transparent;
+            color: var(--text-light);
+        }
+
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background-color: var(--dark-bg);
+        }
+
+        /* --- OVERLAY DISPLAY SECTION --- */
+        #vct-overlay {
+            background: transparent;
+            padding: 20px;
+            flex-shrink: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 550px;
+        }
+        
+        #veto-box {
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            max-width: 1600px;
+        }
+        
+        .overlay-content-wrapper {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .team-sidebar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 150px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .team-sidebar img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            margin-bottom: 10px;
+        }
+        .team-sidebar .team-name-display {
+            font-size: 2.5rem;
+            line-height: 1.1;
+            color: var(--text-light);
+        }
+
+        .veto-main-area {
+            flex-grow: 1;
+        }
+
+        .veto-grid {
+             display: grid;
+             grid-template-columns: repeat(7, 1fr);
+             gap: 15px;
+             align-items: center;
+             flex-grow: 1;
+        }
+
+        .veto-header, .veto-footer {
+            text-align: center;
+            padding: 8px 5px;
+            font-size: 1.5rem;
+            background: var(--header-bg);
+            min-height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .veto-header {
+             border-bottom: 2px solid var(--border-color);
+        }
+        
+        .veto-footer {
+            border-top: 2px solid var(--border-color);
+            color: var(--vct-gold);
+            font-size: 1.3rem;
+        }
+
+        .map-slot {
+            position: relative;
+            aspect-ratio: 3 / 4;
+            border-radius: 5px;
+            overflow: hidden;
+            transition: border-color 0.5s ease-in-out;
+            background-color: rgba(0,0,0,0.2);
+        }
+        
+        .map-card-display {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            transform: translateY(100%);
+            opacity: 0;
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.5s ease;
+        }
+        
+        .map-card-display.is-visible {
+             transform: translateY(0);
+             opacity: 1;
+        }
+
+
+        .map-card-display img.map-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: filter 0.3s ease;
+        }
+        
+        .map-card-display .map-name-overlay {
+            position: absolute;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: white;
+            text-shadow: 2px 2px 5px #000;
+        }
+
+        .action-logo {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            background: rgba(0,0,0,0.4);
+            border-radius: 50%;
+            padding: 5px;
+            z-index: 2;
+        }
+        
+        /* State Styles */
+        .map-card-display.banned .map-image { 
+            filter: grayscale(100%);
+        }
+
+        /* --- ADMIN CONTROL PANEL --- */
+        #admin-controls {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: var(--control-panel-bg);
+        }
+        #admin-controls h2 {
+            font-size: 2rem; margin-bottom: 15px; border-bottom: 2px solid var(--text-light); padding-bottom: 5px;
+        }
+        .admin-section { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .control-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; align-items: end;}
+        .control-group label { font-size: 1.2rem; display: block; margin-bottom: 5px; }
+        .control-group input[type="text"] {
+            width: 100%; padding: 8px; font-family: 'Teko', sans-serif; font-size: 1.2rem;
+            background: var(--dark-bg); color: var(--text-light); border: 1px solid #ccc; border-radius: 3px;
+        }
+        .veto-steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        
+        .veto-step {
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .veto-step:hover { background-color: rgba(255,255,255,0.1); }
+        .veto-step h4 { font-size: 1.5rem; color: var(--vct-gold); margin-bottom: 10px; }
+        .selected-map-display { font-size: 1.3rem; color: var(--text-light); margin-top: 5px; margin-bottom: 10px; }
+        
+        .side-select-group { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+        .side-select-btn {
+            flex-grow: 1;
+            padding: 5px;
+            background-color: var(--dark-bg);
+            border: 1px solid #888;
+            color: var(--text-light);
+            cursor: pointer;
+            font-family: 'Teko', sans-serif;
+            font-size: 1.1rem;
+            border-radius: 3px;
+        }
+        .side-select-btn.active {
+            background-color: var(--vct-gold);
+            color: var(--dark-bg);
+            border-color: var(--vct-gold);
+        }
+        
+        .logo-upload-label {
+            display: inline-block;
+            background: var(--vct-blue);
+            padding: 8px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+            text-align: center;
+        }
+        .logo-upload-label:hover { opacity: 0.9; }
+        .file-name {
+            font-size: 0.9rem;
+            margin-top: 5px;
+            opacity: 0.8;
+            display: block;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        /* Blinking Animations */
+        @keyframes blink-text {
+            50% { color: var(--text-light); }
+        }
+        .blinking-text {
+            animation: blink-text 1.5s linear infinite;
+        }
+        
+        /* Admin Map Selection Buttons */
+        .map-button-grid-admin {
+            display: none; /* Hidden by default */
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 8px;
+            margin-top: 15px;
+        }
+        .map-button-grid-admin.is-visible {
+            display: grid; /* Show when active */
+        }
+        .map-select-btn-admin {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            border: 1px solid #555;
+            padding: 10px 8px;
+            font-size: 1.1rem;
+            font-family: 'Teko', sans-serif;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            border-radius: 3px;
+        }
+        .map-select-btn-admin:hover { background-color: var(--vct-blue); }
+        .map-select-btn-admin:disabled {
+            background-color: #333;
+            color: #777;
+            cursor: not-allowed;
+        }
+
+        #reset-all-btn {
+            background-color: var(--vct-blue); color: var(--text-light); border: none; padding: 10px 20px;
+            font-family: 'Teko', sans-serif; font-size: 1.5rem; cursor: pointer; border-radius: 3px;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="app-container">
+        <div id="vct-overlay">
+            <div id="veto-box">
+                 <div class="overlay-content-wrapper">
+                     <div class="team-sidebar" id="team-a-sidebar">
+                         <img id="team-a-logo-display" src="https://placehold.co/120x120/FFFFFF/000000?text=A" alt="Team A Logo">
+                         <span id="team-a-name-display" class="team-name-display">TEAM A</span>
+                     </div>
+                     <div class="veto-main-area">
+                         <div class="veto-grid" id="veto-top-bar"></div>
+                         <div class="veto-grid" id="map-pool-display-container"></div>
+                         <div class="veto-grid" id="veto-bottom-bar"></div>
+                     </div>
+                     <div class="team-sidebar" id="team-b-sidebar">
+                         <img id="team-b-logo-display" src="https://placehold.co/120x120/FFFFFF/000000?text=B" alt="Team B Logo">
+                         <span id="team-b-name-display" class="team-name-display">TEAM B</span>
+                     </div>
+                 </div>
+            </div>
+        </div>
+
+        <div id="admin-controls">
+            <div class="admin-section">
+                <h2>Global Settings</h2>
+                <div class="control-grid">
+                    <div class="control-group"><label for="team-a-name-input">Team A Name</label><input type="text" id="team-a-name-input" value="TEAM A"></div>
+                    <div class="control-group"><label for="team-b-name-input">Team B Name</label><input type="text" id="team-b-name-input" value="TEAM B"></div>
+                    <div class="control-group">
+                        <label>Team A Logo</label>
+                        <input type="file" id="team-a-logo-upload" accept="image/*" style="display:none;">
+                        <label for="team-a-logo-upload" class="logo-upload-label">Choose File</label>
+                        <span id="team-a-file-name" class="file-name">No file chosen</span>
+                    </div>
+                    <div class="control-group">
+                        <label>Team B Logo</label>
+                        <input type="file" id="team-b-logo-upload" accept="image/*" style="display:none;">
+                        <label for="team-b-logo-upload" class="logo-upload-label">Choose File</label>
+                        <span id="team-b-file-name" class="file-name">No file chosen</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h2>Veto Sequence</h2>
+                <div class="veto-steps-grid" id="veto-steps-container">
+                    </div>
+            </div>
+            
+            <button id="reset-all-btn">Reset Veto</button>
+        </div>
+    </div>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const mapPool = [
+            { id: 'overpass', name: 'OVERPASS', image: 'maps/Overpass.jpg' },
+            { id: 'dust2', name: 'DUST2', image: 'maps/Dust2.jpg' },
+            { id: 'inferno', name: 'INFERNO', image: 'maps/Inferno.png' },
+            { id: 'mirage', name: 'MIRAGE', image: 'maps/Mirage.png' },
+            { id: 'nuke', name: 'NUKE', image: 'maps/Nuke.png' },
+            { id: 'train', name: 'TRAIN', image: 'maps/Train.png' },
+            { id: 'ancient', name: 'ANCIENT', image: 'maps/Ancient.png' },
+        ];
+        
+        let vetoState = {};
+        let previousVetoSteps = [];
+        let teamALogoSrc = 'https://placehold.co/120x120/FFFFFF/000000?text=A';
+        let teamBLogoSrc = 'https://placehold.co/120x120/FFFFFF/000000?text=B';
+
+        const init = () => {
+            resetVetoState();
+            createAdminVetoSteps();
+            createOverlaySlots();
+            attachEventListeners();
+            updateStateAndOverlay();
+        };
+        
+        const resetVetoState = () => {
+             vetoState = {
+                 1: { mapId: '', side: '' }, 2: { mapId: '', side: '' },
+                 3: { mapId: '', side: '' }, 4: { mapId: '', side: '' },
+                 5: { mapId: '', side: '' }, 6: { mapId: '', side: '' },
+                 7: { mapId: '', side: '' }
+             };
+        };
+        
+        const createAdminVetoSteps = () => {
+            const container = document.getElementById('veto-steps-container');
+            container.innerHTML = '';
+            for(let i = 1; i <= 7; i++) {
+                const stepEl = document.createElement('div');
+                stepEl.className = 'veto-step';
+                stepEl.dataset.step = i;
+                
+                let sideSelectionHTML = '';
+                if ([3, 4, 5, 6, 7].includes(i)) { 
+                    sideSelectionHTML = `<div class="side-select-group" data-step="${i}">
+                                            <button class="side-select-btn" data-side="Attack">Attack</button>
+                                            <button class="side-select-btn" data-side="Defense">Defense</button>
+                                        </div>`;
+                }
+                
+                let mapGridHTML = '';
+                // Only steps 1-6 can be manually selected
+                if (i < 7) {
+                    mapGridHTML += `<div class="map-button-grid-admin">`;
+                    mapPool.forEach(map => {
+                        mapGridHTML += `<button class="map-select-btn-admin" data-map-id="${map.id}">${map.name}</button>`;
+                    });
+                    mapGridHTML += `</div>`;
+                }
+
+                stepEl.innerHTML = `
+                    <h4 id="step${i}-title"></h4>
+                    <div class="selected-map-display">- Not Selected -</div>
+                    ${sideSelectionHTML}
+                    ${mapGridHTML}`;
+
+                container.appendChild(stepEl);
+            }
+        };
+        
+        const createOverlaySlots = () => {
+            const topBar = document.getElementById('veto-top-bar');
+            const mapContainer = document.getElementById('map-pool-display-container');
+            const bottomBar = document.getElementById('veto-bottom-bar');
+            topBar.innerHTML = ''; mapContainer.innerHTML = ''; bottomBar.innerHTML = '';
+            for (let i = 0; i < 7; i++) {
+                topBar.appendChild(document.createElement('div')).className = 'veto-header';
+                mapContainer.appendChild(document.createElement('div')).className = 'map-slot';
+                bottomBar.appendChild(document.createElement('div')).className = 'veto-footer';
+            }
+        };
+
+        const toggleMapGrid = (targetStepEl) => {
+            const allGrids = document.querySelectorAll('.map-button-grid-admin');
+            const targetGrid = targetStepEl.querySelector('.map-button-grid-admin');
+
+            // Hide all other grids
+            allGrids.forEach(grid => {
+                if (grid !== targetGrid) {
+                    grid.classList.remove('is-visible');
+                }
+            });
+
+            // Toggle the target grid
+            if (targetGrid) {
+                targetGrid.classList.toggle('is-visible');
+            }
+        };
+
+        const attachEventListeners = () => {
+            document.querySelectorAll('#admin-controls input[type="text"]').forEach(el => el.addEventListener('input', updateStateAndOverlay));
+            
+            document.getElementById('admin-controls').addEventListener('click', (e) => {
+                // Handle side selection button clicks
+                if(e.target.classList.contains('side-select-btn')) {
+                    e.stopPropagation(); // prevent step click
+                    const step = e.target.parentElement.dataset.step;
+                    const side = e.target.dataset.side;
+                    vetoState[step].side = (vetoState[step].side === side) ? '' : side;
+                    updateStateAndOverlay();
+                    return;
+                }
+
+                // Handle map selection from the inline admin grid
+                if (e.target.classList.contains('map-select-btn-admin')) {
+                    e.stopPropagation(); // prevent step click
+                    const mapId = e.target.dataset.mapId;
+                    const step = e.target.closest('.veto-step').dataset.step;
+                    selectMapForStep(step, mapId);
+                    return;
+                }
+
+                // Handle clicking a step to toggle the map grid
+                const stepEl = e.target.closest('.veto-step');
+                if (stepEl) {
+                    const step = stepEl.dataset.step;
+                    if (step < 7) { // Only steps 1-6 have selectable maps
+                        toggleMapGrid(stepEl);
+                    }
+                }
+            });
+            
+            document.getElementById('reset-all-btn').addEventListener('click', resetAll);
+            
+            document.getElementById('team-a-logo-upload').addEventListener('change', (e) => handleFileUpload(e, 'team-a-file-name', (url) => { teamALogoSrc = url; updateStateAndOverlay(); }));
+            document.getElementById('team-b-logo-upload').addEventListener('change', (e) => handleFileUpload(e, 'team-b-file-name', (url) => { teamBLogoSrc = url; updateStateAndOverlay(); }));
+        };
+
+        const selectMapForStep = (step, mapId) => {
+            if (vetoState[step].mapId === mapId) {
+                vetoState[step].mapId = '';
+            } else {
+                vetoState[step].mapId = mapId;
+            }
+            
+            // Hide the grid after selection
+            const stepEl = document.querySelector(`.veto-step[data-step="${step}"]`);
+            const grid = stepEl.querySelector('.map-button-grid-admin');
+            if(grid) {
+                grid.classList.remove('is-visible');
+            }
+
+            updateStateAndOverlay();
+        };
+
+        const handleFileUpload = (event, fileNameId, callback) => {
+             const file = event.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                document.getElementById(fileNameId).textContent = file.name;
+                callback(url);
+            } else {
+                 document.getElementById(fileNameId).textContent = 'No file chosen';
+                 if (fileNameId.includes('a')) {
+                    callback('https://placehold.co/120x120/FFFFFF/000000?text=A');
+                 } else {
+                    callback('https://placehold.co/120x120/FFFFFF/000000?text=B');
+                 }
+            }
+        };
+
+        const updateStateAndOverlay = () => {
+            const teamAName = document.getElementById('team-a-name-input').value || 'Team A';
+            const teamBName = document.getElementById('team-b-name-input').value || 'Team B';
+            
+            document.getElementById('team-a-name-display').textContent = teamAName;
+            document.getElementById('team-b-name-display').textContent = teamBName;
+            document.getElementById('team-a-logo-display').src = teamALogoSrc;
+            document.getElementById('team-b-logo-display').src = teamBLogoSrc;
+
+            const vetoStepConfig = [
+                { id: 1, type: 'ban', team: teamAName, logoSrc: teamALogoSrc },
+                { id: 2, type: 'ban', team: teamBName, logoSrc: teamBLogoSrc },
+                { id: 3, type: 'pick', team: teamAName, logoSrc: teamALogoSrc, sideTeam: teamBName },
+                { id: 4, type: 'pick', team: teamBName, logoSrc: teamBLogoSrc, sideTeam: teamAName },
+                { id: 5, type: 'pick', team: teamAName, logoSrc: teamALogoSrc, sideTeam: teamBName },
+                { id: 6, type: 'pick', team: teamBName, logoSrc: teamBLogoSrc, sideTeam: teamAName },
+                { id: 7, type: 'decider', team: 'Decider', logoSrc: '', sideTeam: teamAName }
+            ];
+
+            
+            vetoStepConfig.forEach(config => {
+                const titleEl = document.getElementById(`step${config.id}-title`);
+                if(titleEl) {
+                    titleEl.textContent = `Step ${config.id}: ${config.team} ${config.type.charAt(0).toUpperCase() + config.type.slice(1)}`;
+                }
+            });
+            
+            const actionedMapIds = Object.values(vetoState).map(s => s.mapId).filter(Boolean);
+            if (actionedMapIds.length >= 6) {
+                const remainingMap = mapPool.find(m => !actionedMapIds.includes(m.id));
+                if (remainingMap) {
+                    vetoState[7].mapId = remainingMap.id;
+                }
+            } else {
+                 vetoState[7].mapId = '';
+            }
+
+            vetoStepConfig.forEach(config => {
+                const mapDisplay = document.querySelector(`.veto-step[data-step="${config.id}"] .selected-map-display`);
+                if (mapDisplay) {
+                    const mapData = mapPool.find(m => m.id === vetoState[config.id].mapId);
+                    mapDisplay.textContent = mapData ? mapData.name : '- Not Selected -';
+                }
+            });
+
+
+            const headerElements = document.querySelectorAll('#veto-top-bar .veto-header');
+            const mapSlotElements = document.querySelectorAll('#map-pool-display-container .map-slot');
+            const footerElements = document.querySelectorAll('#veto-bottom-bar .veto-footer');
+            
+            headerElements.forEach(el => el.textContent = '');
+            mapSlotElements.forEach(el => el.innerHTML = '');
+            footerElements.forEach(el => el.textContent = '');
+
+            const currentRenderedSteps = [];
+
+            vetoStepConfig.forEach((stepConfig, index) => {
+                const stepData = vetoState[stepConfig.id];
+                if (stepData && stepData.mapId) {
+                    const mapData = mapPool.find(m => m.id === stepData.mapId);
+                    if (!mapData) return;
+                    
+                    headerElements[index].textContent = `${stepConfig.team} ${stepConfig.type === 'ban' ? 'VETO' : 'SELECT'} MAP`;
+                    
+                    const slot = mapSlotElements[index];
+                    const alreadyRendered = previousVetoSteps.some(prevStep => prevStep.mapId === stepData.mapId && prevStep.side === stepData.side);
+                    let card = slot.querySelector('.map-card-display');
+                    if (!card) {
+                        card = document.createElement('div');
+                        card.className = 'map-card-display';
+                        slot.appendChild(card);
+                    }
+                    card.className = `map-card-display ${stepConfig.type}`;
+                    card.innerHTML = `
+                        <img class="map-image" src="${mapData.image}" alt="${mapData.name}">
+                        ${stepConfig.logoSrc ? `<img class="action-logo" src="${stepConfig.logoSrc}">` : ''}
+                        <div class="map-name-overlay">${mapData.name}</div>`;
+                    
+                    if (stepData.side) {
+                        footerElements[index].textContent = `${stepConfig.sideTeam} STARTS ${stepData.side.toUpperCase()}`;
+                    }
+
+                    if (!alreadyRendered) {
+                        setTimeout(() => card.classList.add('is-visible'), 50);
+                    } else {
+                        card.classList.add('is-visible');
+                    }
+                    
+                    currentRenderedSteps.push(stepData);
+                }
+            });
+
+            previousVetoSteps = JSON.parse(JSON.stringify(currentRenderedSteps));
+            
+            document.querySelectorAll('.veto-step h4').forEach(h4 => h4.classList.remove('blinking-text'));
+            const firstEmptyStep = vetoStepConfig.find(sc => !vetoState[sc.id].mapId);
+            if (firstEmptyStep) {
+                document.getElementById(`step${firstEmptyStep.id}-title`).classList.add('blinking-text');
+            }
+            
+            document.querySelectorAll('.side-select-btn').forEach(btn => {
+                const step = btn.parentElement.dataset.step;
+                const side = btn.dataset.side;
+                if(vetoState[step] && vetoState[step].side === side) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Update admin map selection buttons state (enabled/disabled)
+            const selectedMapIds = Object.values(vetoState).map(s => s.mapId).filter(Boolean);
+            document.querySelectorAll('.veto-step').forEach(stepEl => {
+                const step = stepEl.dataset.step;
+                if (step < 7) {
+                    const mapButtons = stepEl.querySelectorAll('.map-select-btn-admin');
+                    const currentMapForThisStep = vetoState[step].mapId;
+                    mapButtons.forEach(btn => {
+                        const mapId = btn.dataset.mapId;
+                        btn.disabled = selectedMapIds.includes(mapId) && currentMapForThisStep !== mapId;
+                    });
+                }
+            });
+        };
+        
+        const resetAll = () => {
+            resetVetoState();
+            previousVetoSteps = [];
+            
+            document.querySelectorAll('#admin-controls input[type="text"]').forEach(input => input.value = input.defaultValue || '');
+            document.querySelectorAll('#admin-controls input[type="file"]').forEach(input => input.value = '');
+            document.querySelectorAll('.file-name').forEach(span => span.textContent = 'No file chosen');
+            
+            teamALogoSrc = 'https://placehold.co/120x120/FFFFFF/000000?text=A';
+            teamBLogoSrc = 'https://placehold.co/120x120/FFFFFF/000000?text=B';
+
+            updateStateAndOverlay();
+        };
+
+        init();
+    });
+    </script>
+</body>
+</html>
+```
