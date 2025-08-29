@@ -348,13 +348,13 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const mapPool = [
-            { id: 'overpass', name: 'OVERPASS', image: 'maps/Overpass.png' },
-            { id: 'dust2', name: 'DUST2', image: 'maps/Dust2.jpg' },
-            { id: 'inferno', name: 'INFERNO', image: 'maps/Inferno.png' },
-            { id: 'mirage', name: 'MIRAGE', image: 'maps/Mirage.png' },
-            { id: 'nuke', name: 'NUKE', image: 'maps/Nuke.png' },
-            { id: 'train', name: 'TRAIN', image: 'maps/Train.png' },
-            { id: 'ancient', name: 'ANCIENT', image: 'maps/Ancient.png' },
+            { id: 'ascent', name: 'ASCENT', image: 'maps/Ascent.png' },
+            { id: 'haven', name: 'HAVEN', image: 'maps/Haven.png' },
+            { id: 'icebox', name: 'ICEBOX', image: 'maps/Icebox.png' },
+            { id: 'split', name: 'SPLIT', image: 'maps/Split.png' },
+            { id: 'abyss', name: 'ABYSS', image: 'maps/Abyss.png' },
+            { id: 'lotus', name: 'LOTUS', image: 'maps/Lotus.png' },
+            { id: 'pearl', name: 'PEARL', image: 'maps/Pearl.png'}, 
         ];
         
         let vetoState = {};
@@ -388,7 +388,7 @@
                 stepEl.dataset.step = i;
                 
                 let sideSelectionHTML = '';
-                if ([3, 4, 7].includes(i)) { 
+                if ([3, 4, 5, 6, 7].includes(i)) { 
                     sideSelectionHTML = `<div class="side-select-group" data-step="${i}">
                                             <button class="side-select-btn" data-side="Attack">Attack</button>
                                             <button class="side-select-btn" data-side="Defense">Defense</button>
@@ -530,8 +530,8 @@
                 { id: 2, type: 'ban', team: teamBName, logoSrc: teamBLogoSrc },
                 { id: 3, type: 'pick', team: teamAName, logoSrc: teamALogoSrc, sideTeam: teamBName },
                 { id: 4, type: 'pick', team: teamBName, logoSrc: teamBLogoSrc, sideTeam: teamAName },
-                { id: 5, type: 'ban', team: teamAName, logoSrc: teamALogoSrc },
-                { id: 6, type: 'ban', team: teamBName, logoSrc: teamBLogoSrc },
+                { id: 5, type: 'pick', team: teamAName, logoSrc: teamALogoSrc, sideTeam: teamBName },
+                { id: 6, type: 'pick', team: teamBName, logoSrc: teamBLogoSrc, sideTeam: teamAName },
                 { id: 7, type: 'decider', team: 'Decider', logoSrc: '', sideTeam: teamAName }
             ];
             

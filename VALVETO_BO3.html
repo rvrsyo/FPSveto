@@ -588,6 +588,13 @@
                         slot.appendChild(card);
                     }
                     card.className = `map-card-display ${stepConfig.type}`;
+                    if (stepConfig.type === 'ban') {
+                        card.classList.add('banned');
+                    }
+                    card.innerHTML = `
+                        <img class="map-image" src="${mapData.image}" alt="${mapData.name}">
+                        ${stepConfig.logoSrc ? `<img class="action-logo" src="${stepConfig.logoSrc}">` : ''}
+                        <div class="map-name-overlay">${mapData.name}</div>`;
                     card.innerHTML = `
                         <img class="map-image" src="${mapData.image}" alt="${mapData.name}">
                         ${stepConfig.logoSrc ? `<img class="action-logo" src="${stepConfig.logoSrc}">` : ''}
